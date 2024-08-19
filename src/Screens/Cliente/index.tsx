@@ -1,38 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {  Alert, ScrollView, Text,  TextInput,  View } from 'react-native';
-import { ButtonSubmit, ClienteButton, FormView, Header, MainContainer } from './styles';
+import { Alert, ScrollView, Text, View } from 'react-native';
+import { ClienteButton, Header, MainContainer } from './styles';
 import { useEffect, useState } from 'react';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { api } from '../../utils/api';
 import ModalCliente from '../../components/ModalCliente';
 import { ActivityIndicator } from 'react-native-paper';
-
-type DropDownType = { label: string; value: string; };
-type ConsultaType = [string, {
-	Nota: string,
-	Cartao: string,
-	Artigo: string,
-	Peca: string,
-	Compr: string,
-	Peso: string,
-	Gaiola: string,
-	Conferido: string,
-	ChaveItem: string,
-	Cliente: string,
-	Entrada:string
-}]
-
-type DadosCliType = [string, {
-	Codigo: string,
-	Nome: string,
-}]
 
 type ListaClI = [string, {
     CodCli:   string;
     Fantasia: string;
 }]
-
-
 export default function Cliente(){
 	const [isLoading, setIsLoading] = useState(false);
 	const [listaCli, setListaCli] = useState<ListaClI[]>([]);
@@ -41,21 +18,20 @@ export default function Cliente(){
 	const [codCli, setCodCli] = useState('');
 
 	useEffect(() => {
+		//get all the Costumers
 		handleSubmit();
 	}, []);
 
-
+	//function to get all the Costumers
 	async function handleSubmit(){
 		await api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
 			nomeDll: 'ClienteSeparar',
 			parametros: ['']
 		}).then((response) => {
 			const {data} = response.data;
+			//format data
 			const ListaCli = Object.entries(data.ListaCli) as ListaClI[];
-
 			setListaCli(ListaCli);
-
-
 		}).catch((error) => {
 			Alert.alert('Ocorreu um erro!',error);
 		}).finally(() => {
@@ -63,26 +39,13 @@ export default function Cliente(){
 		});
 	}
 
+	//function to handle the press of a Customer
 	async function handlePressCliente(codCli: string, cliente: string) {
 		setCurrentCli(cliente);
 		setCodCli(codCli);
-		setIsLoading(true);
-		await api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
-			nomeDll: 'NotasSeparar',
-			parametros: [codCli]
-		}).then(() => {
-
-			setIsLoading(false);
-			setIsModalVisible(true);
-
-		}).catch((error) => {
-			Alert.alert('Ocorreu um erro!',error);
-		}).finally(() => {
-
-		});
+		setIsLoading(true); //"fake loading"
+		setIsModalVisible(true);
 	}
-
-
 
 
 	return(
@@ -91,7 +54,10 @@ export default function Cliente(){
 				cliente={currentCli}
 				isModalVisible={isModalVisible}
 				codCli={codCli}
-				onClose={() => setIsModalVisible(false)}
+				onClose={() => {
+					setIsModalVisible(false);
+					setIsLoading(false);
+				}}
 			/>
 			<MainContainer>
 				<Header>

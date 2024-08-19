@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import styled from 'styled-components/native';
 
 export const MainContainer = styled.View`
@@ -41,7 +42,6 @@ export const ViewSepara = styled.View`
 	height: 100%;
 `;
 
-
 export const ViewInput = styled.View`
 	gap: 15px;
 	width: 90%;
@@ -81,7 +81,6 @@ export const ViewButtons = styled.View`
 	align-items: center;
 	justify-content: center;
 `;
-
 
 export const ButtonPeca = styled.TouchableOpacity`
 	border-radius: 10px;
@@ -124,7 +123,6 @@ export const ButtonLista = styled.TouchableOpacity<ButtonListaProps>`
 	padding: 10px;
 `;
 
-
 export const ButtonFilter = styled.TouchableOpacity`
 	background-color: #0908;
 	min-width: 50px;
@@ -138,3 +136,23 @@ export const ButtonFilter = styled.TouchableOpacity`
 	z-index: 1;
 	padding: 10px;
 `;
+
+export const styles = StyleSheet.create({
+	buttonS: {
+		backgroundColor: '#00aa00',
+		padding: 15,
+		borderRadius: 35,
+		width: 100,
+		alignItems: 'center',
+		marginTop: 10,
+
+	},
+	buttonN: {
+		backgroundColor: '#aa0000',
+		padding: 15,
+		borderRadius: 35,
+		width: 100,
+		alignItems: 'center',
+		marginTop: 10,
+	}
+});

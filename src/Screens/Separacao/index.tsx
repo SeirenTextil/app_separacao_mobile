@@ -1,21 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import { api } from '../../utils/api';
-import { ActivityIndicator } from 'react-native';
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, KeyboardTypeOptions } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ButtonMic } from '../../components/ButtonMic';
+import * as Speech from 'expo-speech';
 import {
 	BackButton,
-	ButtonFilter,
-	ButtonLista,
 	ButtonPeca,
 	ButtonSubmit,
 	ButtonSwitchKeyboard,
 	Header,
 	MainContainer,
+	styles,
 	TextButtonPeca,
 	TextInfo,
 	ViewInput,
@@ -25,71 +24,16 @@ import {
 	Text,
 	View,
 	TextInput,
-	KeyboardTypeOptions,
 	FlatList,
 	TouchableOpacity,
 	Alert
 } from 'react-native';
 
-interface ListPeca {
-	item: Peca;
-}
-
-interface Peca {
-	Nota: string;
-	Cartao: string;
-	Artigo: string;
-	Peca: string;
-	Compr: string;
-	Peso: string;
-	Gaiola: string;
-	Conferido: string;
-	ChaveItem: string;
-}
-
-interface DataPecaType {
-	Situacao: string;
-	Mensagem: string;
-	TipoRetorno: string;
-	Gaiola: string;
-	Qtde: string;
-	ChaveItem: string;
-	Dados: Peca[] | null;
-}
-
-type ListaPeca = [string, {
-	Nota: string;
-	Cartao: string;
-	Tipo: string;
-	Artigo: string;
-	Peca: string;
-	HrTing: string;
-	Peso: string;
-	Gaiola: string;
-	Confirmado: string;
-	Chave: string;
-	Item: string;
-	NotaFatura: string;
-	SetorProdu: string;
-}]
-
-
 
 export default function Separacao({ navigation }: any) {
 	const route = useRoute();
-	const {
-		nomeCli,
-		dtEntrada,
-		codCli
-	}: any = route.params;
-	const [responseGaiola, setResponseGaiola] = useState({
-		Situacao: '',
-	});
-	const [tableContent] = useState({
-		tableHeaders: ['nota', 'cartão ', 'artigo', 'peça', 'hr. ting.', 'peso', 'gaiola', 'conferido'],
-	});
-	const [keyboardType, setKeyboardType] = useState<KeyboardTypeOptions | undefined>('numeric');
-	const [value, setValue] = useState('');
+	const { nomeCli, dtEntrada, codCli }: any = route.params; // Get params from previous page
+	const [responseGaiola, setResponseGaiola] = useState({Situacao: ''});
 	const [loading, setLoading] = useState(false);
 	const [gaiola, setGaiola] = useState('');
 	const [chaveItem, setChaveItem] = useState('');
@@ -97,15 +41,24 @@ export default function Separacao({ navigation }: any) {
 	const [dadosPeca, setDadosPeca] = useState<DataPecaType>();
 	const [guardaGaiolaVisible, setGuardaGaiolaVisible] = useState(false);
 	const [showLista, setShowLista] = useState(false);
-	const [listData, setListData] = useState<string[][]>([]);
-	const [filtered, setFiltered] = useState(false);
-	const filteredData = filtered ? listData.filter(item => item[7] === 'Não') : listData;
+	const [isListening, setIsListening] = useState(false);
+	const [keyboardType, setKeyboardType] = useState<KeyboardTypeOptions>('numeric');
+	const [value, setValue] = useState('');
 
+	// eslint-disable-next-line prefer-const
+	let msg;
 	useEffect(() => {
+		//reset values
 		reloadPage();
+		Speech.getAvailableVoicesAsync().then((response) =>
+			console.log(response)
+
+		);
+
 	}, []);
 
 	useEffect(() => {
+		//logic to show btnGaiola
 		if (dadosPeca?.TipoRetorno === '0') {
 			setGuardaGaiolaVisible(true);
 			setChaveItem(dadosPeca.ChaveItem);
@@ -114,27 +67,33 @@ export default function Separacao({ navigation }: any) {
 		}
 	}, [dadosPeca]);
 
+	//Create items for the table
 	const ItemList = ({ item }: ListPeca) => (
-		<ButtonPeca onPress={() => handlePressSubmitButton(item.Peca, item.ChaveItem)} key={item.ChaveItem}>
+		<ButtonPeca onPress={() => handleSubmit(item.Peca, item.ChaveItem)} key={item.ChaveItem}>
 			<TextButtonPeca style={{ fontWeight: 'bold' }}>
-				Peça: {item?.Peca}
+        Peça: {item?.Peca}
 			</TextButtonPeca>
-
 			<TextButtonPeca >
-				Artigo: {item?.Artigo}
+        Artigo: {item?.Artigo}
 			</TextButtonPeca>
-
-
 		</ButtonPeca>
 	);
 
-	async function handlePressSubmitButton(peca: string, chave: string) {
+	//Function to speak the text returned by the API
+	function speak(thingToSay: string){
+		Speech.speak(thingToSay,{
+			rate: 2
+		});
+	}
+
+	async function handleSubmit(peca: string, chave: string) {
+		setValue(peca);
 		setShowLista(false);
 		setChaveItem(chave);
 		setResponseGaiola({ Situacao: '' });
-		setValue(peca);
 		setLoading(true);
 
+		// Call API 'InformaPeca'
 		await api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
 			nomeDll: 'InformaPeca',
 			parametros: [`${codCli}|${dtEntrada}|${peca}`]
@@ -143,12 +102,21 @@ export default function Separacao({ navigation }: any) {
 				const data: DataPecaType = response.data.data;
 				setDadosPeca(data);
 
+				//see if dados exist
 				if (data.Dados) {
-					const ListDados = Object.values(data.Dados as Peca[]);
+					const ListDados = Object.values(data.Dados as Peca[]); //format data
 					setDados(ListDados);
 				}
 				setChaveItem(data.ChaveItem);
 				setGaiola(data.Gaiola);
+
+				//set message to speak
+				msg =
+					` ${data.Mensagem}
+            ${data.Qtde.length > 0 ? 'Quantidade:' + data.Qtde : ''}
+            ${data.Gaiola.length > 0 ? ',Gaiola:' + data.Gaiola : ''}`;
+
+				speak(msg); //speak the message
 			})
 			.catch((err) => {
 				Alert.alert('Atenção!', err.message);
@@ -156,12 +124,12 @@ export default function Separacao({ navigation }: any) {
 			.finally(() => {
 				setLoading(false);
 			});
-		setValue('');
-
 	}
 
+	//function to inform the gaiola, and if it has to be closed
 	async function handlePressInformaGaiola(gaiola: string, chave: string, fecharGaiola: 'S' | 'N') {
 		setLoading(true);
+		//make sure that all params are valid
 		if (gaiola && gaiola != null && chave != null && chave != undefined && gaiola != undefined) {
 			api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
 				nomeDll: 'InformaGaiola',
@@ -170,63 +138,35 @@ export default function Separacao({ navigation }: any) {
 				const data = response.data.data;
 				setResponseGaiola(response.data.data);
 				setGaiola(data.Gaiola);
-
 				Alert.alert('Atenção!', data.Mensagem);
 			}).catch((err) => {
 				Alert.alert('Atenção!', err.message);
 			}).finally(() => {
 				setLoading(false);
-				handlePressSubmitButton(value, chave);
+				//call the API to check the status
+				handleSubmit(value, chave);
 			});
 		} else {
 			Alert.alert('Atenção!', 'Informe uma gaiola válida!');
-			handlePressSubmitButton(value, chave);
+			//set the message
+			msg = 'Informe uma gaiola válida!';
+			//speak the message
+			speak(msg);
+			//call the API to check the status
+			handleSubmit(value, chave);
+
 		}
 	}
 
+	//function to close the gaiola
 	function handlePressFecharGaiola() {
 		handlePressInformaGaiola(gaiola, chaveItem, 'S');
 	}
 
+	//function reset values
 	function reloadPage() {
-		handlePressSubmitButton('', chaveItem);
+		handleSubmit('', chaveItem);
 	}
-
-	async function handlePressLista() {
-
-		if (showLista) {
-			setShowLista(false);
-			return;
-		}
-
-		setLoading(true);
-		await api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
-			nomeDll: 'LoteSeparar',
-			parametros: [`${codCli}|${dtEntrada}`]
-		})
-			.then((response) => {
-				const data = response.data.data;
-
-				const table = Object.entries(data.ListaPecas) as ListaPeca[];
-				const tableFormatted = table.map(([, item]) => {
-					return [item.Nota, item.Cartao, item.Artigo, item.Peca, item.HrTing, item.Peso, item.Gaiola, item.Confirmado == 'S' ? 'Sim' : item.Confirmado == 'O' ? 'OK' : 'Não'];
-				});
-				setListData(tableFormatted);
-				setShowLista(true);
-
-			})
-			.catch((err) => {
-				Alert.alert('Atenção!', err.message);
-			})
-			.finally(() => {
-				setLoading(false);
-			});
-	}
-
-	function filterTable(){
-		setFiltered(prevState => !prevState);
-	}
-
 
 	return (
 		<MainContainer>
@@ -238,30 +178,34 @@ export default function Separacao({ navigation }: any) {
 				<Ionicons name="arrow-back" size={28} color="#000" />
 			</BackButton>
 
+
 			<ViewInput>
-				<ButtonSwitchKeyboard onPress={() => setKeyboardType(keyboardType === 'numeric' ? 'twitter' : 'numeric')}>
+				<ButtonSwitchKeyboard
+					onPress={() => setKeyboardType(keyboardType === 'numeric' ? 'twitter' : 'numeric')}
+				>
+
 					{keyboardType === 'numeric'
 						? <MaterialCommunityIcons name="alphabetical-variant" size={24} color="#fff" />
 						: <MaterialCommunityIcons name="numeric" size={24} color="#fff" />
 					}
+
 				</ButtonSwitchKeyboard>
 
 				<TextInput
 					style={{ fontSize: 18, width: '60%', backgroundColor: '#fff', height: 50, borderRadius: 10, padding: 10 }}
-					keyboardType={keyboardType}
 					enterKeyHint='done'
+					keyboardType={keyboardType}
 					onChangeText={(a: string) => setValue(a)}
-					onEndEditing={() => handlePressSubmitButton(value, chaveItem)}
+					onEndEditing={() => handleSubmit(value, chaveItem)}
 					value={value}
 					placeholder='Número da peça...'
+					onPress={() => setValue('')}
 				/>
 
-				<ButtonSubmit onPress={() => handlePressSubmitButton(value, chaveItem)}>
+				<ButtonSubmit onPress={() => handleSubmit(value, chaveItem)}>
 					<Text style={{ color: '#fff', fontSize: 20, fontWeight: '600' }}>Enviar</Text>
 				</ButtonSubmit>
 			</ViewInput>
-
-
 
 			<ViewSepara>
 				{!showLista &&
@@ -278,7 +222,7 @@ export default function Separacao({ navigation }: any) {
 								columnWrapperStyle={{ gap: 15 }}
 							/>
 							: !loading &&
-							<View style={{ alignItems: 'center' }}>
+							<View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
 								{dadosPeca?.Situacao === '1' &&
 									<>
 										<TextInfo>
@@ -345,7 +289,7 @@ export default function Separacao({ navigation }: any) {
 											Quantidade: {dadosPeca?.Qtde}
 										</TextInfo>
 										<TextInfo>
-											Gaiola: {dadosPeca?.Gaiola}
+											Gaiola: {dadosPeca.Gaiola.length > 0 ? dadosPeca.Gaiola : 'Não encontrada'}
 										</TextInfo>
 									</>
 								}
@@ -373,33 +317,16 @@ export default function Separacao({ navigation }: any) {
 								}
 							</View>
 						}
-
 					</>
 				}
 
-
 			</ViewSepara>
-
+			<ButtonMic
+				isListening={isListening} setIsListening={setIsListening}
+				setTextResult={(a) => handleSubmit(a, chaveItem)}
+			/>
 		</MainContainer>
 	);
 }
 
-const styles = StyleSheet.create({
-	buttonS: {
-		backgroundColor: '#00aa00',
-		padding: 15,
-		borderRadius: 35,
-		width: 100,
-		alignItems: 'center',
-		marginTop: 10,
 
-	},
-	buttonN: {
-		backgroundColor: '#aa0000',
-		padding: 15,
-		borderRadius: 35,
-		width: 100,
-		alignItems: 'center',
-		marginTop: 10,
-	}
-});

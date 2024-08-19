@@ -3,10 +3,11 @@ import { Alert, Modal, Text, View } from 'react-native';
 import { ModalView, TableHeader, TableRow, TableHeaderText, TableView, TableRowText, CloseButton } from './styles';
 import { useState } from 'react';
 import { api } from '../../utils/api';
-import { FlatList } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { TableNotaType } from './types';
 import { useNavigation } from '@react-navigation/native';
+import { TableNotaType } from './types';
+import { FlatList } from 'react-native';
+
 
 interface ModalProps {
     isModalVisible: boolean;
@@ -16,8 +17,6 @@ interface ModalProps {
 		dtEntradaTable?: string;
 		pecasTable?: string;
 }
-
-
 export default function ModalCliente({ isModalVisible, onClose, cliente, codCli, dtEntradaTable, pecasTable }: ModalProps) {
 	const [showInfo, setShowInfo] = useState(false);
 	const [tableNota, setTableNota] = useState<TableNotaType[]>([]);
@@ -26,6 +25,7 @@ export default function ModalCliente({ isModalVisible, onClose, cliente, codCli,
 	const navigation = useNavigation<any>();
 
 	useEffect(() => {
+		//load items when loading or entering the page
 		setLoading(true);
 		if (codCli != '' && codCli != null && codCli.length > 0){
 			api.post('AbrideiraDesenroladeira/chama-dll?deviceName=TBT-SEPARACAO', {
@@ -34,21 +34,9 @@ export default function ModalCliente({ isModalVisible, onClose, cliente, codCli,
 			}).then((response) =>
 			{
 				const {data} = response.data;
+				//format data
 				const ListaNota = Object.entries(data.ListaNota) as TableNotaType[];
-
-
-				if (dtEntradaTable != undefined && pecasTable != undefined && dtEntradaTable.length > 0 && pecasTable.length > 0) {
-
-					const filteredArray = ListaNota.filter(item => {
-						const dateString = item[1].Data;
-						return dateString === dtEntradaTable;
-					});
-
-					setTableNota(filteredArray);
-
-				}else{
-					setTableNota(ListaNota);
-				}
+				setTableNota(ListaNota);
 			}
 			).catch((error) => Alert.alert('Atenção!', error.message))
 				.finally(() => setLoading(false));
@@ -62,6 +50,7 @@ export default function ModalCliente({ isModalVisible, onClose, cliente, codCli,
 		}
 	}
 
+	//create the header
 	function renderHeader(){
 		return (
 			<TableHeader>
@@ -72,6 +61,7 @@ export default function ModalCliente({ isModalVisible, onClose, cliente, codCli,
 		);
 	}
 
+	//create the row
 	function renderItem({item}: {item: TableNotaType}) {
 		return (
 			<TableRow key={item[1].Data} onPress={() => redirectSepara(item[1].Data)}>
@@ -120,7 +110,6 @@ export default function ModalCliente({ isModalVisible, onClose, cliente, codCli,
 				)}
 			</ModalView>
 			}
-
 		</Modal>
 	);
 }

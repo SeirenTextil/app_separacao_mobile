@@ -143,10 +143,7 @@ export default function Programacao(){
       			refreshing={false}
       			onRefresh={() => handleChangeData(value)}
       		/>
-      	}
-      	>
-
-
+      	}>
       	<DataTable.Header style={styles.tableHeader}>
       		<DataTable.Title textStyle={styles.title}>CLIENTE</DataTable.Title>
       		<DataTable.Title textStyle={styles.title}>DATA</DataTable.Title>
